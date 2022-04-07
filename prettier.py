@@ -12,7 +12,7 @@ class Printer:
     def get_dict_lines(cls, obj, indent='\t'):
         lines = []
         for index, (key, value) in enumerate(obj.items()):
-            line_prefix = f"{pprint.pformat(key, compact=True)} : "
+            line_prefix = f"{pprint.pformat(key, compact=True)}: "
             if isinstance(value, dict):
                 dict_lines = cls.get_dict_lines(value, indent)
                 lines.append(line_prefix + dict_lines[0])
@@ -74,3 +74,13 @@ class EndpointPrintMixin:
                 continue
             out[attr] = getattr(self, attr)
         return Printer.repr_dict(out)
+
+
+class PrintMixin:
+    def __repr__(self):
+        return Printer.repr_dict(self.__dict__)
+
+
+class DefaultPrintMixin:
+    def __repr__(self):
+        return pprint.pformat(self.__dict__)
