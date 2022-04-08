@@ -1,4 +1,4 @@
-# Prettier
+# Prettier - properly pprint of nested objects
 
 If you are trying to output nested data structures, each of which is individually displayed as a dictionary representation, the nesting levels are not separated, such an output is difficult to perceive.
 ```
