@@ -13,20 +13,20 @@ class Printer:
         lines = []
         for index, (key, value) in enumerate(obj.items()):
             line_prefix = f"{pprint.pformat(key, compact=True)}: "
+            buffer = []
             if isinstance(value, dict):
                 dict_lines = cls.get_dict_lines(value, indent)
-                lines.append(line_prefix + dict_lines[0])
-                lines.extend(cls.get_indented_lines(dict_lines[1:], len(line_prefix) * ' '))
-                if index != len(obj) - 1 and len(dict_lines) == 1:
-                    lines[-1] = lines[-1] + ','
+                buffer.append(line_prefix + dict_lines[0])
+                buffer.extend(cls.get_indented_lines(dict_lines[1:], len(line_prefix) * ' '))
             else:
                 value_lines = pprint.pformat(value, compact=True).split('\n')
                 value_lines = cls.get_indented_lines(value_lines, len(line_prefix) * ' ',
                                                      skip_first=True)
                 value_lines[0] = line_prefix + value_lines[0]
-                if index != len(obj) - 1 and len(value_lines) == 1:
-                    value_lines[0] = value_lines[0] + ','
-                lines.extend(value_lines)
+                buffer.extend(value_lines)
+            if index != len(obj) - 1 and len(buffer) == 1:
+                buffer[-1] = buffer[-1] + ','
+            lines.extend(buffer)
         if lines:
             lines[0] = '{' + lines[0]
             lines[-1] = lines[-1] + '}'
