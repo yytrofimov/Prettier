@@ -1,4 +1,5 @@
 import pprint
+from functools import partial
 
 
 class Printer:
@@ -9,7 +10,7 @@ class Printer:
         return pprint.pformat(obj)
 
     @classmethod
-    def get_dict_lines(cls, obj, indent='\t'):
+    def get_dict_lines(cls, obj, indent=''):
         lines = []
         for index, (key, value) in enumerate(obj.items()):
             line_prefix = f"{pprint.pformat(key, compact=True)}: "
@@ -28,6 +29,8 @@ class Printer:
                 buffer[-1] = buffer[-1] + ','
             lines.extend(buffer)
         if lines:
+            for index in range(len(lines)):
+                lines[index] = indent + lines[index]
             lines[0] = '{' + lines[0]
             lines[-1] = lines[-1] + '}'
             for index in range(1, len(lines)):
@@ -41,16 +44,16 @@ class Printer:
         return '\n'.join(lines)
 
     @classmethod
-    def repr_dict(cls, obj):
-        return cls.join_lines(cls.get_dict_lines(obj))
+    def repr_dict(cls, obj, indent=''):
+        return cls.join_lines(cls.get_dict_lines(obj, indent))
 
     @classmethod
-    def get_indented_string(cls, obj, indent='\t', indents=1, skip_first=False):
+    def get_indented_string(cls, obj, indent='', indents=1, skip_first=False):
         lines = cls.get_indented_lines(obj.split('\n'), indent, indents, skip_first)
         return cls.join_lines(lines)
 
     @classmethod
-    def get_indented_lines(cls, lines, indent='\t', indents=1, skip_first=False):
+    def get_indented_lines(cls, lines, indent='', indents=1, skip_first=False):
         lines = [_ for _ in lines]
         for index in range(len(lines)) if skip_first is False else range(1, len(lines)):
             lines[index] = indent * indents + lines[index]
@@ -76,7 +79,7 @@ class EndpointPrintMixin:
         return Printer.repr_dict(out)
 
 
-class PrintMixin:
+class PPrintMixin:
     def __repr__(self):
         return Printer.repr_dict(self.__dict__)
 
@@ -84,3 +87,10 @@ class PrintMixin:
 class DefaultPrintMixin:
     def __repr__(self):
         return pprint.pformat(self.__dict__)
+
+
+class PrintMixinFactory:
+    def __new__(cls, indent='\t'):
+        return type('PrintMixin', (), {
+            '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent)
+        })
