@@ -48,8 +48,9 @@ class Printer:
             if pp is True:
                 line_prefix = f"{pprint.pformat(key, compact=True)}: "
             else:
-                line_prefix = f"{str(key)}: "
+                line_prefix = f"'{str(key)}': "
             line_prefix_lines = line_prefix.split('\n')
+            line_prefix_lines = cls.get_indented_lines(line_prefix_lines, ' ', skip_first=True)
             buffer.extend(line_prefix_lines)
             if isinstance(value, dict):
                 dict_lines = cls.get_dict_lines(value, indent, pp)
@@ -63,7 +64,11 @@ class Printer:
                         value_lines = cls.get_dict_lines(value)
                 else:
                     if not isinstance(value, dict):
-                        value_lines = str(value).split('\n')
+                        if isinstance(value, str):
+                            value_lines = f"'{str(value)}'".split('\n')
+                            value_lines = cls.get_indented_lines(value_lines, ' ', skip_first=True)
+                        else:
+                            value_lines = str(value).split('\n')
                     else:
                         value_lines = cls.get_dict_lines(value)
                 value_lines = cls.get_indented_lines(value_lines, len(line_prefix) * ' ',
