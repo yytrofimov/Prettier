@@ -1,5 +1,4 @@
 import pprint
-from functools import partial
 
 
 class Printer:
@@ -10,22 +9,30 @@ class Printer:
         return pprint.pformat(obj)
 
     @classmethod
-    def get_dict_lines(cls, obj, indent=''):
+    def get_dict_lines(cls, obj, indent='', pp=True):
         lines = []
         for index, (key, value) in enumerate(obj.items()):
-            line_prefix = f"{pprint.pformat(key, compact=True)}: "
             buffer = []
-            if isinstance(value, dict):
-                dict_lines = cls.get_dict_lines(value, indent)
-                buffer.append(line_prefix + dict_lines[0])
-                buffer.extend(cls.get_indented_lines(dict_lines[1:], len(line_prefix) * ' '))
+            if pp is True:
+                line_prefix = f"{pprint.pformat(key, compact=True)}: "
             else:
-                value_lines = pprint.pformat(value, compact=True).split('\n')
+                line_prefix = f"{str(key)}: "
+            line_prefix_lines = line_prefix.split('\n')
+            buffer.extend(line_prefix_lines)
+            if isinstance(value, dict):
+                dict_lines = cls.get_dict_lines(value, indent, pp)
+                buffer.append(buffer.pop() + dict_lines[0])
+                buffer.extend(cls.get_indented_lines(dict_lines[1:], len(line_prefix_lines[-1]) * ' '))
+            else:
+                if pp is True:
+                    value_lines = pprint.pformat(value, compact=True).split('\n')
+                else:
+                    value_lines = str(value).split('\n')
                 value_lines = cls.get_indented_lines(value_lines, len(line_prefix) * ' ',
                                                      skip_first=True)
-                value_lines[0] = line_prefix + value_lines[0]
+                value_lines[0] = buffer.pop() + value_lines[0]
                 buffer.extend(value_lines)
-            if index != len(obj) - 1 and len(buffer) == 1:
+            if index != len(obj) - 1:
                 buffer[-1] = buffer[-1] + ','
             lines.extend(buffer)
         if lines:
@@ -44,8 +51,8 @@ class Printer:
         return '\n'.join(lines)
 
     @classmethod
-    def repr_dict(cls, obj, indent=''):
-        return cls.join_lines(cls.get_dict_lines(obj, indent))
+    def repr_dict(cls, obj, indent='', pp=True):
+        return cls.join_lines(cls.get_dict_lines(obj, indent, pp))
 
     @classmethod
     def get_indented_string(cls, obj, indent='', indents=1, skip_first=False):
@@ -84,13 +91,13 @@ class PPrintMixin:
         return Printer.repr_dict(self.__dict__)
 
 
-class DefaultPrintMixin:
+class PrintMixin:
     def __repr__(self):
         return pprint.pformat(self.__dict__)
 
 
-class PrintMixinFactory:
-    def __new__(cls, indent='\t'):
-        return type('PrintMixin', (), {
-            '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent)
+class MixinFactory:
+    def __new__(cls, indent='', pp=True, name='PrinMixin'):
+        return type(name, (), {
+            '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent, pp)
         })
