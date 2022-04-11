@@ -3,11 +3,11 @@ import pprint
 
 class Printer:
     @classmethod
-    def print(cls, obj):
+    def print(cls, obj) -> None:
         print(cls.repr(obj))
 
     @classmethod
-    def handle_endpoint(cls, obj, endpoint):
+    def handle_endpoint(cls, obj, endpoint: str) -> dict:
         if isinstance(obj, dict):
             return cls.handle_dict_endpoint(obj, endpoint)
         out = {}
@@ -21,7 +21,7 @@ class Printer:
         return out
 
     @classmethod
-    def handle_dict_endpoint(cls, obj, endpoint):
+    def handle_dict_endpoint(cls, obj: dict, endpoint: str) -> dict:
         out = {}
         if endpoint not in obj:
             return {}
@@ -35,13 +35,13 @@ class Printer:
         return out
 
     @classmethod
-    def repr(cls, obj):
+    def repr(cls, obj) -> str:
         if isinstance(obj, dict):
             return cls.repr_dict(obj)
         return pprint.pformat(obj)
 
     @classmethod
-    def get_dict_lines(cls, obj, indent='', pp=True):
+    def get_dict_lines(cls, obj, indent: str = '', pp: bool = True) -> list:
         lines = []
         for index, (key, value) in enumerate(obj.items()):
             buffer = []
@@ -85,20 +85,20 @@ class Printer:
         return lines
 
     @classmethod
-    def join_lines(cls, lines):
+    def join_lines(cls, lines: list) -> str:
         return '\n'.join(lines)
 
     @classmethod
-    def repr_dict(cls, obj, indent='', pp=True):
+    def repr_dict(cls, obj, indent: str = '', pp: bool = True) -> str:
         return cls.join_lines(cls.get_dict_lines(obj, indent, pp))
 
     @classmethod
-    def get_indented_string(cls, obj, indent='', indents=1, skip_first=False):
+    def get_indented_string(cls, obj, indent: str = '', indents: int = 1, skip_first: bool = False) -> str:
         lines = cls.get_indented_lines(obj.split('\n'), indent, indents, skip_first)
         return cls.join_lines(lines)
 
     @classmethod
-    def get_indented_lines(cls, lines, indent='', indents=1, skip_first=False):
+    def get_indented_lines(cls, lines, indent: str = '', indents: int = 1, skip_first: bool = False) -> list:
         lines = [_ for _ in lines]
         for index in range(len(lines)) if skip_first is False else range(1, len(lines)):
             lines[index] = indent * indents + lines[index]
@@ -116,7 +116,7 @@ class PrintMixin:
 
 
 class MixinFactory:
-    def __new__(cls, indent='', pp=True, endpoint=None, name='PrintMixin'):
+    def __new__(cls, indent: str = '', pp: bool = True, endpoint: str = None, name: str = 'PrintMixin'):
         if endpoint is None:
             return type(name, (), {
                 '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent, pp)
