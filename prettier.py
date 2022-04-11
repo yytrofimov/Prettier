@@ -3,9 +3,41 @@ import pprint
 
 class Printer:
     @classmethod
+    def print(cls, obj):
+        print(cls.repr(obj))
+
+    @classmethod
+    def handle_endpoint(cls, obj, endpoint):
+        if isinstance(obj, dict):
+            return cls.handle_dict_endpoint(obj, endpoint)
+        out = {}
+        if not hasattr(obj, endpoint):
+            return {}
+        attrs = getattr(obj, endpoint)
+        for attr in attrs:
+            if not hasattr(obj, attr):
+                continue
+            out[attr] = getattr(obj, attr)
+        return out
+
+    @classmethod
+    def handle_dict_endpoint(cls, obj, endpoint):
+        out = {}
+        if endpoint not in obj:
+            return {}
+        attrs = obj[endpoint]
+        if not any(isinstance(attrs, _) for _ in (list, tuple, set)):
+            return {}
+        for attr in attrs:
+            if attr not in obj:
+                continue
+            out[attr] = obj[attr]
+        return out
+
+    @classmethod
     def repr(cls, obj):
         if isinstance(obj, dict):
-            return cls.repr_dict(dict)
+            return cls.repr_dict(obj)
         return pprint.pformat(obj)
 
     @classmethod
@@ -25,9 +57,15 @@ class Printer:
                 buffer.extend(cls.get_indented_lines(dict_lines[1:], len(line_prefix_lines[-1]) * ' '))
             else:
                 if pp is True:
-                    value_lines = pprint.pformat(value, compact=True).split('\n')
+                    if not isinstance(value, dict):
+                        value_lines = pprint.pformat(value, compact=True).split('\n')
+                    else:
+                        value_lines = cls.get_dict_lines(value)
                 else:
-                    value_lines = str(value).split('\n')
+                    if not isinstance(value, dict):
+                        value_lines = str(value).split('\n')
+                    else:
+                        value_lines = cls.get_dict_lines(value)
                 value_lines = cls.get_indented_lines(value_lines, len(line_prefix) * ' ',
                                                      skip_first=True)
                 value_lines[0] = buffer.pop() + value_lines[0]
@@ -67,25 +105,6 @@ class Printer:
         return lines
 
 
-class EndpointPrintMixin:
-    _PRINT_MIXIN_ENDPOINT = None
-
-    def __repr__(self):
-        out = {}
-        if self._PRINT_MIXIN_ENDPOINT is None:
-            endpoint = '__dict__'
-        else:
-            endpoint = self._PRINT_MIXIN_ENDPOINT
-        if not hasattr(self, endpoint):
-            return pprint.pformat(out)
-        attrs = getattr(self, endpoint)
-        for attr in attrs:
-            if not hasattr(self, attr):
-                continue
-            out[attr] = getattr(self, attr)
-        return Printer.repr_dict(out)
-
-
 class PPrintMixin:
     def __repr__(self):
         return Printer.repr_dict(self.__dict__)
@@ -97,7 +116,11 @@ class PrintMixin:
 
 
 class MixinFactory:
-    def __new__(cls, indent='', pp=True, name='PrinMixin'):
+    def __new__(cls, indent='', pp=True, endpoint=None, name='PrintMixin'):
+        if endpoint is None:
+            return type(name, (), {
+                '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent, pp)
+            })
         return type(name, (), {
-            '__repr__': lambda _: Printer.repr_dict(_.__dict__, indent, pp)
+            '__repr__': lambda _: Printer.repr_dict(Printer.handle_endpoint(_, endpoint), indent, pp)
         })
