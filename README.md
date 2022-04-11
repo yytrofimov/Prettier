@@ -2,64 +2,134 @@
 
 If you are trying to output nested data structures, each of which is individually displayed as a dictionary representation, the nesting levels are not separated, such an output is difficult to perceive.
 ```
-class DefaultPrintMixin:
-    def __repr__(self):
-        return pprint.pformat(self.__dict__)
+from prettier import PrintMixin, PPrintMixin
 
 
-class A(DefaultPrintMixin):
+class A(PrintMixin):
     def __init__(self):
-        self.attrs = ('b', 'c', 'd')
-        self.b = 20
-        self.c = 30
-        self.d = B()
+        self.attrs = ('a', 'b', 'c')
+        self.a = 10
+        self.b = {'a': 1, 'b': 2, 'c': 3}
+        self.c = B()
 
 
-class B(DefaultPrintMixin):
+class B(PrintMixin):
     def __init__(self):
-        self.attrs = ('b', 'aba \n caba', 'd')
-        self.b = 'aba \n caba'
-        setattr(self, 'aba \n caba', 2000)
-        self.d = C()
+        self.b = 200
+        self.c = C()
+        self.d = 10
+        setattr(self, 'a \n a', {'a': 1, 'b': C(), 'c': 3})
 
 
-class C(DefaultPrintMixin):
+class C(PrintMixin):
     def __init__(self):
-        self.a = 'aba \n caba'
-        self.b = 2000
-        self.c = 3000
+        self.a = ('b', 'c')
+        self.b = 'a \n a'
+        self.c = {}
 ```
 You can expect the following output:
 ```
-{'attrs': ('b', 'c', 'd'),
- 'b': 20,
- 'c': 30,
- 'd': {'aba \n caba': 2000,
- 'attrs': ('b', 'aba \n caba', 'd'),
- 'b': 'aba \n caba',
- 'd': {'a': 'aba \n caba', 'b': 2000, 'c': 3000}}}
+{'a': 10,
+ 'attrs': ('a', 'b', 'c'),
+ 'b': {'a': 1, 'b': 2, 'c': 3},
+ 'c': {'a \n a': {'a': 1, 'b': {'a': ('b', 'c'), 'b': 'a \n a', 'c': {}}, 'c': 3},
+ 'b': 200,
+ 'c': {'a': ('b', 'c'), 'b': 'a \n a', 'c': {}},
+ 'd': 10}}
 ```
-But if you use a ```PrintMixin``` instead of the standard one, then you can expect the following output:
+But if you use a ```PPrintMixin``` instead of the standard one, then you can expect the following output:
 ```
-{'attrs': ('b', 'c', 'd'),
- 'b': 20,
- 'c': 30,
- 'd': {'attrs': ('b', 'aba \n caba', 'd'),
-       'b': 'aba \n caba',
-       'aba \n caba': 2000,
-       'd': {'a': 'aba \n caba',
-             'b': 2000,
-             'c': 3000}}}
+{'attrs': ('a', 'b', 'c'),
+ 'a': 10,
+ 'b': {'a': 1,
+       'b': 2,
+       'c': 3},
+ 'c': {'b': 200,
+       'c': {'a': ('b', 'c'),
+             'b': 'a \n a',
+             'c': {}},
+       'd': 10,
+       'a \n a': {'a': 1,
+                  'b': {'a': ('b', 'c'),
+                        'b': 'a \n a',
+                        'c': {}},
+                  'c': 3}}}
 ```
-It is also possible to use ```EndpointPrintMixin```. As an endpoint, specify the name of the attribute, the contents of the list of attributes to display.
+Note that the string keys and values are processed using ```pprint```. If you want to change the behavior using the ```str``` function, you can use ```MixinFactory``` and specify the ```pp``` parameter. Like this:
 ```
-_PRINT_MIXIN_ENDPOINT = 'attrs'
+from prettier import MixinFactory
+
+
+MyMixin = MixinFactory(pp=False)
 ```
 You can expect the following output:
 ```
-{'b': 20,
- 'c': 30,
- 'd': {'b': 'aba \n caba',
-       'aba \n caba': 2000,
-       'd': {}}}
+{'attrs': ('a', 'b', 'c'),
+ 'a': 10,
+ 'b': {'a': 1,
+       'b': 2,
+       'c': 3},
+ 'c': {'b': 200,
+       'c': {'a': ('b', 'c'),
+             'b': 'a 
+                    a',
+             'c': {}},
+       'd': 10,
+       'a 
+         a': {'a': 1,
+              'b': {'a': ('b', 'c'),
+                    'b': 'a 
+                           a',
+                    'c': {}},
+              'c': 3}}}
 ```
+You can even use the ```endpoint``` argument. This is the name of the attribute that stores the list of arguments to print. Lets comnibe som Mixins, like this:
+```
+from prettier import MixinFactory
+
+AttrsPrintMixin = MixinFactory(pp=False, endpoint='attrs')
+APrintMixin = MixinFactory(pp=False, endpoint='a')
+PrintMixin = MixinFactory(pp=False)
+
+
+class A(AttrsPrintMixin):
+    def __init__(self):
+        self.attrs = ('a', 'b', 'c')
+        self.a = 10
+        self.b = {'a': 1, 'b': 2, 'c': 3}
+        self.c = B()
+
+
+class B(PrintMixin):
+    def __init__(self):
+        self.b = 200
+        self.c = C()
+        self.d = 10
+        setattr(self, 'a \n a', {'a': 1, 'b': C(), 'c': 3})
+
+
+class C(APrintMixin):
+    def __init__(self):
+        self.a = ('b', 'c')
+        self.b = 'a \n a'
+        self.c = {}
+```
+ 
+The output will be:
+```
+{'a': 10,
+ 'b': {'a': 1,
+       'b': 2,
+       'c': 3},
+ 'c': {'b': 200,
+       'c': {'b': 'a 
+                    a',
+             'c': {}},
+       'd': 10,
+       'a 
+         a': {'a': 1,
+              'b': {'b': 'a 
+                           a',
+                    'c': {}},
+              'c': 3}}}
+ ```
