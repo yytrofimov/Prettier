@@ -17,6 +17,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     license_files=('LICENSE.txt',),
-    py_modules=["prettier"],  # Name of the python package
-    package_dir={'': 'src/'},  #
+    py_modules=["prettier"],
+    package_dir={'': 'src/'},
 )
