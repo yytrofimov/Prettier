@@ -8,7 +8,7 @@ setuptools.setup(
     description='Properly pprint of nested objects',
     author_email='yytrofimov@gmail.com',
     url='https://github.com/yytrofimov/Prettier',
-    version="0.0.4",
+    version="0.0.5",
     long_description=long_description,
     long_description_content_type='text/markdown',
     classifiers=[
@@ -17,4 +17,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     license_files=('LICENSE.txt',),
+    py_modules=["prettier"],  # Name of the python package
+    package_dir={'': 'src/'},  #
 )
