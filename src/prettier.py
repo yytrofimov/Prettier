@@ -84,6 +84,7 @@ class Printer:
                 value_lines = cls.get_dict_lines(value, indent)
             elif isinstance(value, str):
                 value_lines = f"'{str(value)}'".split('\n')
+                value_lines = cls.get_indented_lines(value_lines, len(value_lines[0]) * ' ', skip_first=True)
             else:
                 value_lines = str(value).split('\n')
             value_lines = cls.get_indented_lines(value_lines, len(line_prefix_lines[-1]) * ' ',
