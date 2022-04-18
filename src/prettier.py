@@ -68,10 +68,10 @@ class Printer:
                 else:
                     continue
             out[attr] = obj[attr]
-        return cls.join_lines(cls.get_dict_lines(out, indent))
+        return cls.join_lines(cls.get_dict_lines(out, indent, (id(obj),)))
 
     @classmethod
-    def get_dict_lines(cls, obj, indent: str = '') -> list:
+    def get_dict_lines(cls, obj, indent: str = '', ids: tuple = ()) -> list:
         lines = []
         for index, (key, value) in enumerate(obj.items()):
             buffer = []
@@ -81,7 +81,10 @@ class Printer:
                                                        skip_first=True)
             buffer.extend(line_prefix_lines)
             if isinstance(value, dict):
-                value_lines = cls.get_dict_lines(value, indent)
+                if id(value) not in ids:
+                    value_lines = cls.get_dict_lines(value, indent, ids + (id(value),))
+                else:
+                    value_lines = ['REC']
             elif isinstance(value, str):
                 value_lines = f"'{str(value)}'".split('\n')
                 value_lines = cls.get_indented_lines(value_lines, len(value_lines[0]) * ' ', skip_first=True)
