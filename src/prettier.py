@@ -17,7 +17,7 @@ class Printer:
     @classmethod
     def get_endpoint_attrs(cls, obj, endpoint: str, raises: bool = False) -> tuple:
         if isinstance(obj, dict):
-            return cls.get_dict_endpoint_attrs(obj, endpoint, raises)
+            return cls._get_dict_endpoint_attrs(obj, endpoint, raises)
         if not hasattr(obj, endpoint):
             if raises is True:
                 raise NoSuchEndpoint
@@ -30,7 +30,7 @@ class Printer:
         return attrs
 
     @classmethod
-    def get_dict_endpoint_attrs(cls, obj: dict, endpoint: str, raises: bool = False) -> tuple:
+    def _get_dict_endpoint_attrs(cls, obj: dict, endpoint: str, raises: bool = False) -> tuple:
         if endpoint not in obj:
             if raises is True:
                 raise NoSuchEndpoint
@@ -45,7 +45,7 @@ class Printer:
     @classmethod
     def str(cls, obj, indent: str = '', attrs: tuple = (), raises: bool = False) -> str:
         if isinstance(obj, dict):
-            return cls.str_dict(obj, indent, attrs, raises)
+            return cls._str_dict(obj, indent, attrs, raises)
         out = {}
         for attr in attrs:
             if not hasattr(obj, attr):
@@ -54,10 +54,10 @@ class Printer:
                 else:
                     continue
             out[attr] = getattr(obj, attr)
-        return cls.str_dict(out, indent)
+        return cls._str_dict(out, indent)
 
     @classmethod
-    def str_dict(cls, obj, indent: str = '', attrs: tuple = (), raises: bool = False) -> str:
+    def _str_dict(cls, obj, indent: str = '', attrs: tuple = (), raises: bool = False) -> str:
         out = {}
         if not attrs:
             attrs = tuple(obj.keys())
@@ -68,10 +68,10 @@ class Printer:
                 else:
                     continue
             out[attr] = obj[attr]
-        return cls.join_lines(cls.get_dict_lines(out, indent, (id(obj),)))
+        return cls.join_lines(cls._get_dict_lines(out, indent, (id(obj),)))
 
     @classmethod
-    def get_dict_lines(cls, obj, indent: str = '', ids: tuple = ()) -> list:
+    def _get_dict_lines(cls, obj, indent: str = '', ids: tuple = ()) -> list:
         lines = []
         for index, (key, value) in enumerate(obj.items()):
             buffer = []
@@ -82,7 +82,7 @@ class Printer:
             buffer.extend(line_prefix_lines)
             if isinstance(value, dict):
                 if id(value) not in ids:
-                    value_lines = cls.get_dict_lines(value, indent, ids + (id(value),))
+                    value_lines = cls._get_dict_lines(value, indent, ids + (id(value),))
                 else:
                     value_lines = ['REC']
             elif isinstance(value, str):
@@ -161,9 +161,7 @@ class MixinFactory:
                 dict_or_slots_only: bool = False, methods_and_funcs: bool = False, raises: bool = False,
                 name: str = 'PrintMixin'):
         return type(name, (), {
-            '__str__': lambda _: Printer.str(_, indent,
-                                             cls.get_attrs(_, attrs, endpoint, dict_or_slots_only, methods_and_funcs,
-                                                           raises), raises)
+            '__str__': lambda _: cls.str(_, indent, attrs, endpoint, dict_or_slots_only, methods_and_funcs, raises)
         })
 
     @classmethod
@@ -180,6 +178,13 @@ class MixinFactory:
         if methods_and_funcs is False:
             attrs = Printer.filter_attrs(obj, attrs, lambda _: not (inspect.ismethod(_) or inspect.isfunction(_)))
         return attrs
+
+    @classmethod
+    def str(cls, obj, indent: str = '', attrs: tuple = (), endpoint: str = None,
+            dict_or_slots_only: bool = False, methods_and_funcs: bool = False, raises: bool = False):
+        return Printer.str(obj, indent,
+                           cls.get_attrs(obj, attrs, endpoint, dict_or_slots_only, methods_and_funcs,
+                                         raises), raises)
 
 
 PPrintMixin = MixinFactory()
