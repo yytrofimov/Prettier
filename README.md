@@ -1,135 +1,127 @@
 # Prettier - properly pprint of nested objects
 
-If you are trying to output nested data structures, each of which is individually displayed as a dictionary representation, the nesting levels are not separated, such an output is difficult to perceive.
+If you are trying to output nested data structures, each of which is individually displayed as a dictionary
+representation, the nesting levels are not separated, such an output is difficult to perceive.
+
 ```
-from prettier import PrintMixin, PPrintMixin
+class PPrintMixin:
+    def __str__(self):
+        return str(self.__dict__)
 
 
-class A(PrintMixin):
+SAMPLE_DICT = {'a': None}
+SAMPLE_DICT['a'] = SAMPLE_DICT
+
+
+class A(PPrintMixin):
     def __init__(self):
         self.attrs = ('a', 'b', 'c')
         self.a = 10
-        self.b = {'a': 1, 'b': 2, 'c': 3}
-        self.c = B()
+        self.b = B()
+        self.c = {'a': 1, 'b': 2, 'c': 3}
+        setattr(self, 'd\nd', {'a': 1, 'b': 2, 'c': 3})
+        self.e = 'a\na'
+        self.f = 'a' * 100
+        self.g = self
+        self.h = SAMPLE_DICT
 
 
-class B(PrintMixin):
+class B(PPrintMixin):
     def __init__(self):
-        self.b = 200
+        setattr(self, 'a \n a', {'a': 1, 'b': {'a': 1, 'b': 2, 'c': 3}, 'c\nc': C()})
+        self.b = [C(), 1]
         self.c = C()
-        self.d = 10
-        setattr(self, 'a \n a', {'a': 1, 'b': C(), 'c': 3})
 
 
-class C(PrintMixin):
+class C(PPrintMixin):
     def __init__(self):
         self.a = ('b', 'c')
         self.b = 'a \n a'
         self.c = {}
 ```
+
 You can expect the following output:
+
+```
+{'attrs': ('a', 'b', 'c'), 'a': 10, 'b': <__main__.B object at 0x1034b74c0>, 'c': {'a': 1, 'b': 2, 'c': 3}, 'd\nd': {'a': 1, 'b': 2, 'c': 3}, 'e': 'a\na', 'f': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'g': <__main__.A object at 0x1033fb3a0>, 'h': {'a': {...}}}
+```
+
+But if you use a ```PPrintMixin``` instead of the standard one, then you can expect the following output:
+
 ```
 {'a': 10,
- 'attrs': ('a', 'b', 'c'),
- 'b': {'a': 1, 'b': 2, 'c': 3},
- 'c': {'a \n a': {'a': 1, 'b': {'a': ('b', 'c'), 'b': 'a \n a', 'c': {}}, 'c': 3},
- 'b': 200,
- 'c': {'a': ('b', 'c'), 'b': 'a \n a', 'c': {}},
- 'd': 10}}
-```
-But if you use a ```PPrintMixin``` instead of the standard one, then you can expect the following output:
-```
-{'attrs': ('a', 'b', 'c'),
- 'a': 10,
- 'b': {'a': 1,
+ 'd
+   d': {'a': 1,
+        'b': 2,
+        'c': 3},
+ 'e': 'a
+       a',
+ 'c': {'a': 1,
        'b': 2,
        'c': 3},
- 'c': {'b': 200,
+ 'h': {'a': <RecursionError on 4304997312>},
+ 'b': {'a 
+           a': {'a': 1,
+                'b': {'a': 1,
+                      'b': 2,
+                      'c': 3},
+                'c
+                  c': {'a': ('b', 'c'),
+                       'c': {},
+                       'b': 'a 
+                              a'}},
        'c': {'a': ('b', 'c'),
-             'b': 'a \n a',
-             'c': {}},
-       'd': 10,
-       'a \n a': {'a': 1,
-                  'b': {'a': ('b', 'c'),
-                        'b': 'a \n a',
-                        'c': {}},
-                  'c': 3}}}
-```
-Note that the string keys and values are processed using ```pprint```. If you want to change the behavior using the ```str``` function, you can use ```MixinFactory``` and specify the ```pp``` parameter. Like this:
-```
-from prettier import MixinFactory
-
-
-MyMixin = MixinFactory(pp=False)
-```
-You can expect the following output:
-```
-{'attrs': ('a', 'b', 'c'),
- 'a': 10,
- 'b': {'a': 1,
-       'b': 2,
-       'c': 3},
- 'c': {'b': 200,
-       'c': {'a': ('b', 'c'),
+             'c': {},
              'b': 'a 
-                    a',
-             'c': {}},
-       'd': 10,
-       'a 
-         a': {'a': 1,
-              'b': {'a': ('b', 'c'),
-                    'b': 'a 
-                           a',
-                    'c': {}},
-              'c': 3}}}
+                    a'},
+       'b': [<__main__.C object at 0x100bf3a60>, 1]},
+ 'attrs': ('a', 'b', 'c'),
+ 'f': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+ 'g': <RecursionError on 4307498032>}
 ```
-You can even use the ```endpoint``` argument. This is the name of the attribute that stores the list of arguments to print. Lets comnibe som Mixins, like this:
+
+If you want to create an own Mixin, just import MixinFactory. For example, you can use the ```endpoint``` argument. This
+is the name of the attribute that stores the list of arguments to
+print. Let's combine some Mixins, like this:
+
 ```
 from prettier import MixinFactory
 
-AttrsPrintMixin = MixinFactory(pp=False, endpoint='attrs')
-APrintMixin = MixinFactory(pp=False, endpoint='a')
-PrintMixin = MixinFactory(pp=False)
+AttrsPrintMixin = MixinFactory(endpoint='attrs')
+APrintMixin = MixinFactory(endpoint='a')
 
 
 class A(AttrsPrintMixin):
-    def __init__(self):
-        self.attrs = ('a', 'b', 'c')
-        self.a = 10
-        self.b = {'a': 1, 'b': 2, 'c': 3}
-        self.c = B()
+    ...
 
 
 class B(PrintMixin):
-    def __init__(self):
-        self.b = 200
-        self.c = C()
-        self.d = 10
-        setattr(self, 'a \n a', {'a': 1, 'b': C(), 'c': 3})
+    ...
 
 
 class C(APrintMixin):
-    def __init__(self):
-        self.a = ('b', 'c')
-        self.b = 'a \n a'
-        self.c = {}
+    ...
 ```
- 
+
 The output will be:
+
 ```
 {'a': 10,
- 'b': {'a': 1,
-       'b': 2,
-       'c': 3},
- 'c': {'b': 200,
-       'c': {'b': 'a 
+ 'b': {'c': {'b': 'a 
                     a',
              'c': {}},
-       'd': 10,
+       'b': [<__main__.C object at 0x100b478b0>, 1],
        'a 
-         a': {'a': 1,
-              'b': {'b': 'a 
-                           a',
-                    'c': {}},
-              'c': 3}}}
+           a': {'a': 1,
+                'b': {'a': 1,
+                      'b': 2,
+                      'c': 3},
+                'c
+                  c': {'b': 'a 
+                              a',
+                       'c': {}}}},
+ 'c': {'a': 1,
+       'b': 2,
+       'c': 3}}
  ```

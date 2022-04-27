@@ -8,7 +8,7 @@ setuptools.setup(
     description='Properly pprint of nested objects',
     author_email='yytrofimov@gmail.com',
     url='https://github.com/yytrofimov/Prettier',
-    version="0.0.6",
+    version="0.0.7",
     long_description=long_description,
     long_description_content_type='text/markdown',
     classifiers=[

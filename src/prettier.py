@@ -91,7 +91,7 @@ class Printer:
 
     @classmethod
     def _get_recursion_string(cls, obj) -> str:
-        return f'REC ON {id(obj)}'
+        return f'<RecursionError on {id(obj)}>'
 
     @classmethod
     def _get_dict_lines(cls, obj, indent: str = '', ids=()) -> list:
@@ -199,6 +199,8 @@ class MixinFactory:
             attrs = attrs
         else:
             attrs = Printer.get_attrs(obj)
+        if raises is False:
+            attrs = tuple(_ for _ in attrs if hasattr(obj, _))
         if methods_and_funcs is False:
             attrs = Printer.filter_attrs(obj, lambda _: not (inspect.ismethod(_) or inspect.isfunction(_)), attrs)
         return attrs
